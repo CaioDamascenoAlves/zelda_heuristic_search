@@ -3,26 +3,52 @@ import csv
 def parse_map_data(file_path):
     """
     Lê um arquivo de mapa CSV e extrai o grid e os pontos de interesse.
+    
+    Args:
+        file_path (str): Caminho para o arquivo CSV do mapa
+        
+    Returns:
+        tuple: (grid, locations) onde grid é uma matriz 2D de tipos de terreno
+               e locations é um dicionário com posições dos pontos especiais
+               
+    Raises:
+        FileNotFoundError: Se o arquivo não for encontrado
+        ValueError: Se o arquivo estiver malformado
     """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Arquivo de mapa não encontrado: {file_path}")
+    
     grid = []
     locations = {}
     
-    with open(file_path, 'r') as f:
-        reader = csv.reader(f)
-        for r, row in enumerate(reader):
-            grid_row = []
-            for c, cell in enumerate(row):
-                cell_content = cell.strip()
-                terrain_type = LEGEND.get(cell_content, 6)
-                grid_row.append(terrain_type)
-                
-                if cell_content in ['L', 'MS', 'E', 'P', 'MA', 'LW']:
-                    key = cell_content
-                    if key not in locations:
-                        locations[key] = []
-                    locations[key].append((r, c))
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for r, row in enumerate(reader):
+                if not row:  # Pula linhas vazias
+                    continue
+                    
+                grid_row = []
+                for c, cell in enumerate(row):
+                    cell_content = cell.strip()
+                    terrain_type = LEGEND.get(cell_content, 6)
+                    grid_row.append(terrain_type)
+                    
+                    if cell_content in ['L', 'MS', 'E', 'P', 'MA', 'LW']:
+                        key = cell_content
+                        if key not in locations:
+                            locations[key] = []
+                        locations[key].append((r, c))
 
-            grid.append(grid_row)
+                grid.append(grid_row)
+                
+        if not grid:
+            raise ValueError(f"Arquivo de mapa vazio: {file_path}")
+            
+    except Exception as e:
+        if isinstance(e, (FileNotFoundError, ValueError)):
+            raise
+        raise ValueError(f"Erro ao processar arquivo de mapa {file_path}: {str(e)}")
             
     return grid, locations
 
@@ -41,15 +67,25 @@ TERRAIN_COSTS = {
 }
 
 # --- Carregando Mapas e Localizações ---
-HYRULE_MAP_PATH = '/home/israel/zelda_heuristic_search/maps/hyrule_map.csv'
-DUNGEON_1_MAP_PATH = '/home/israel/zelda_heuristic_search/maps/dungeon1_map.csv'
-DUNGEON_2_MAP_PATH = '/home/israel/zelda_heuristic_search/maps/dungeon2_map.csv'
-DUNGEON_3_MAP_PATH = '/home/israel/zelda_heuristic_search/maps/dungeon3_map.csv'
+import os
 
-HYRULE_MAP, hyrule_locations = parse_map_data(HYRULE_MAP_PATH)
-DUNGEON_1_MAP, dungeon_1_locations = parse_map_data(DUNGEON_1_MAP_PATH)
-DUNGEON_2_MAP, dungeon_2_locations = parse_map_data(DUNGEON_2_MAP_PATH)
-DUNGEON_3_MAP, dungeon_3_locations = parse_map_data(DUNGEON_3_MAP_PATH)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MAPS_DIR = os.path.join(BASE_DIR, 'maps')
+
+HYRULE_MAP_PATH = os.path.join(MAPS_DIR, 'hyrule_map.csv')
+DUNGEON_1_MAP_PATH = os.path.join(MAPS_DIR, 'dungeon1_map.csv')
+DUNGEON_2_MAP_PATH = os.path.join(MAPS_DIR, 'dungeon2_map.csv')
+DUNGEON_3_MAP_PATH = os.path.join(MAPS_DIR, 'dungeon3_map.csv')
+
+try:
+    HYRULE_MAP, hyrule_locations = parse_map_data(HYRULE_MAP_PATH)
+    DUNGEON_1_MAP, dungeon_1_locations = parse_map_data(DUNGEON_1_MAP_PATH)
+    DUNGEON_2_MAP, dungeon_2_locations = parse_map_data(DUNGEON_2_MAP_PATH)
+    DUNGEON_3_MAP, dungeon_3_locations = parse_map_data(DUNGEON_3_MAP_PATH)
+except (FileNotFoundError, ValueError) as e:
+    print(f"Erro ao carregar mapas: {e}")
+    print("Verifique se os arquivos de mapa estão presentes no diretório 'maps/'")
+    raise
 
 DUNGEON_MAPS = {
     "dungeon1": DUNGEON_1_MAP,

@@ -9,7 +9,16 @@ from map_data import (
 from a_star import a_star_search
 
 def calculate_all_costs():
-    """Calcula e armazena o custo de todos os segmentos de viagem necessários."""
+    """
+    Calcula e armazena o custo de todos os segmentos de viagem necessários.
+    
+    Computa os custos de viagem entre todos os pontos de interesse usando A*,
+    incluindo trajetos em Hyrule entre masmorras e custos internos de cada masmorra.
+    
+    Returns:
+        tuple: (costs, paths) onde costs é um dicionário com custos entre pontos
+               e paths contém os caminhos correspondentes
+    """
     # points_of_interest: Inclui o ponto de partida, todas as entradas das masmorras (do mapa de Hyrule),
     # e o destino final (entrada de Lost Woods).
     points_of_interest = {"start": START_POS, **DUNGEON_ENTRANCES, "end": LOST_WOODS_POS}
@@ -45,7 +54,18 @@ def calculate_all_costs():
     return costs, paths
 
 def find_optimal_tour(costs):
-    """Encontra a ordem ótima de visitação das masmorras com o menor custo total."""
+    """
+    Encontra a ordem ótima de visitação das masmorras com o menor custo total.
+    
+    Usa força bruta para testar todas as permutações possíveis das masmorras
+    e retorna a sequência que minimiza o custo total da jornada.
+    
+    Args:
+        costs (dict): Dicionário com custos pré-calculados entre pontos
+        
+    Returns:
+        tuple: (best_tour, min_total_cost) com a melhor rota e seu custo
+    """
     dungeons = list(DUNGEON_ENTRANCES.keys())
     all_tours = list(itertools.permutations(dungeons))
     best_tour, min_total_cost = None, float('inf')
@@ -89,10 +109,7 @@ def draw_map_image(map_grid, path, special_points, cell_size=10, labels=None):
         draw.ellipse([(x-radius, y-radius), (x+radius, y+radius)], fill=color)
 
         if labels and name in labels:
-            try:
-                font = ImageFont.truetype("arial.ttf", 8)
-            except IOError:
-                font = ImageFont.load_default()
+            font = ImageFont.load_default()
             text_color = (255, 255, 255)
             bbox = font.getbbox(labels[name])
             text_width = bbox[2] - bbox[0]
@@ -102,6 +119,14 @@ def draw_map_image(map_grid, path, special_points, cell_size=10, labels=None):
     return img
 
 def generate_journey_image(all_paths, optimal_tour, total_cost):
+    """
+    Gera uma imagem combinada mostrando a jornada completa de Link.
+    
+    Args:
+        all_paths (dict): Caminhos pré-calculados entre todos os pontos
+        optimal_tour (tuple): Sequência ótima de visitação das masmorras
+        total_cost (float): Custo total da jornada ótima
+    """
     hyrule_path = []
     hyrule_path.extend(all_paths[("start", optimal_tour[0])])
     for i in range(len(optimal_tour) - 1):
@@ -131,10 +156,7 @@ def generate_journey_image(all_paths, optimal_tour, total_cost):
     combined_img = Image.new('RGB', (total_width, total_height), (20, 20, 20))
     
     draw = ImageDraw.Draw(combined_img)
-    try:
-        font = ImageFont.truetype("arial.ttf", 12)
-    except IOError:
-        font = ImageFont.load_default()
+    font = ImageFont.load_default()
     draw.text((10, 10), f"Custo Total da Jornada: {total_cost}", font=font, fill=(255, 255, 255))
 
     combined_img.paste(hyrule_img, (0, 30))
@@ -143,10 +165,18 @@ def generate_journey_image(all_paths, optimal_tour, total_cost):
         combined_img.paste(img, (0, current_y))
         current_y += img.height
 
-    combined_img.save("/home/israel/zelda_heuristic_search/zelda_journey.png")
-    print("\nImagem da jornada salva como 'zelda_journey.png'")
+    output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zelda_journey.png")
+    combined_img.save(output_path)
+    print(f"\nImagem da jornada salva como '{output_path}'")
 
 def visualize_console_journey(full_path, total_cost):
+    """
+    Visualiza a jornada de Link no console com animação passo a passo.
+    
+    Args:
+        full_path (list): Lista completa de posições do caminho ótimo
+        total_cost (float): Custo total da jornada
+    """
     # Códigos de Cores ANSI para o Terminal
     class Colors:
         GREEN = '\033[92m'
